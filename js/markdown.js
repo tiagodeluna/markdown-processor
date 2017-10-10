@@ -1,19 +1,67 @@
 var LineType = {
-	HEADER: 1,
-	PARAGRAPH: 2,
-	UNORDERED_LIST: 3,
-	ORDERED_LIST: 4,
-	QUOTE: 5
-}
+    EMPTY: 1,
+	HEADER: 2,
+	PARAGRAPH: 3,
+	UNORDERED_LIST: 4,
+	ORDERED_LIST: 5,
+	QUOTE: 6
+};
+
+var ListPosition = {
+    FIRST: 1,
+    MIDDLE: 2,
+    LAST: 3
+};
 
 var MarkdownLine = {
-    openingTag: null,
-    content: null,
-    closingTag: null,
-    type: null,
+    level: 1,
+    content: "",
+    type: undefined,
+    position: undefined,
 
-    toString: funtion() {
-    	return openingTag + content + closingTag;
+    toString: function() {
+        var opening = "",
+            closing = "";
+
+        switch(this.type) {
+            case LineType.EMPTY:
+                this.content = "<br />";
+                break;
+            case LineType.HEADER:
+                opening = "<h"+this.level+">";
+                closing = "</h"+this.level+">";
+                break;
+            case LineType.PARAGRAPH:
+                opening = "<p>";
+                closing = "</p>";
+                break;
+            case LineType.UNORDERED_LIST:
+                if (this.position === ListPosition.FIRST) {
+                    opening = "<ul>";
+                }
+                opening += "<li>";
+                closing = "</li>";
+                if (this.position === ListPosition.LAST) {
+                    closing += "</ul>";
+                }
+                break;
+            case LineType.ORDERED_LIST:
+                if (this.position === ListPosition.FIRST) {
+                    opening = "<ol>";
+                }
+                opening += "<li>";
+                closing = "</li>";
+                if (this.position === ListPosition.LAST) {
+                    closing += "</ol>";
+                }
+                break;
+            case LineType.QUOTE:
+                opening = "<quote>";
+                closing = "</quote>";
+            default:
+                break;
+        }
+    	return opening + this.content + closing;
     }
 };
 
@@ -27,45 +75,44 @@ var convertToHtml = (function(text) {
 
     return function (text) {
         var lines = text == null ? [] : text.split("\n");
-        var output = "";
+        var output = [];
         var emptyLnCounter = 0;
-        var line;
-        var trimLine;
         
         var len = lines.length;
         for (var i = 0; i < len; i += 1) {
-            line = lines[i];
-            trimLine = line.trim();
+            //Create a new line and identify its type using Regex
+            var line = Object.create(MarkdownLine);
 
-            if (trimLine.length == 0) {
+            if (lines[i].trim().length == 0) {
                 /* JUMP LINE */
                 emptyLnCounter += 1;
                 if (emptyLnCounter > 1) {
-                    output += "<br />";
+                    line.type = LineType.EMPTY;
+                    output.push(line);
                 }
             } else {
                 emptyLnCounter = 0;
-                var starting, content, ending;
 
                 /* FIND HEADERS */
-                var occur = REGEX_HEADERS.exec(line);
+                var occur = REGEX_HEADERS.exec(lines[i]);
                 if (occur != null && occur.length > 0) {
-                    var level = occur[0].length >= 6 ? 6 : occur[0].length;
-                    starting = "<h"+level+">";
-                    content = line.substr(level);
-                    ending = "</h"+level+">";
+                    line.type = LineType.HEADER;
+                    line.level = occur[0].length >= 6 ? 6 : occur[0].length;
+                    line.content = lines[i].substr(line.level).trim();
+                    output.push(line);
                 } else {
                     // TODO: Other rules!
-                    starting = "<p>";
-                    content = line;
-                    ending = "</p>";
+                    line.type = LineType.PARAGRAPH;
+                    line.content = lines[i];
+                    output.push(line);
                 }
 
-                output += starting + content + ending;
             }
         }
-        
-        return output;
+
+        //Join the output array into a single string, implicitly
+        // calling the toString() method of each line
+        return output.join("");
     }
 })();
 
