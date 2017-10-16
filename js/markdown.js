@@ -7,7 +7,7 @@ var convertToHtml = (function(text) {
     var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
     var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;
     var REGEX_BOLD_ASTERISK = /\*\*(?=\S)(.*?)(\S)\*\*/g;
-    var REGEX_NOT_EMPHASYS_MARKS = /[^ _\*]/;
+    var REGEX_NOT_EMPHASIS_MARKS = /[^ _\*]/;
 // Alternatives:
 //    /__\B(.+?)\B__/g;
 //    /__(.*?)(?=__)__/g;
@@ -79,10 +79,10 @@ var convertToHtml = (function(text) {
                 default:
                     break;
             }
-            return opening + this.applyEmphasys(this.content) + closing;
+            return opening + this.applyEmphasis(this.content) + closing;
         },
 
-        applyEmphasys: function(text) {
+        applyEmphasis: function(text) {
 
             if (text != null && text.length > 0) {
                 /* REPLACE BOLD AND ITALIC OCCURRENCES */
@@ -104,15 +104,15 @@ var convertToHtml = (function(text) {
         - text: The original string (Omitted. Not necessary here)
     */
     function boldReplacer(match, p1, p2) {
-        return emphasysReplacer(match, p1, p2, "strong");
+        return emphasisReplacer(match, p1, p2, "strong");
     }
 
     function italicReplacer(match, p1, p2) {
-        return emphasysReplacer(match, p1, p2, "em");
+        return emphasisReplacer(match, p1, p2, "em");
     }
 
-    function emphasysReplacer(match, p1, p2, element) {
-        if (REGEX_NOT_EMPHASYS_MARKS.test(p1) || REGEX_NOT_EMPHASYS_MARKS.test(p2)) {
+    function emphasisReplacer(match, p1, p2, element) {
+        if (REGEX_NOT_EMPHASIS_MARKS.test(p1) || REGEX_NOT_EMPHASIS_MARKS.test(p2)) {
             return "<" + element + ">" + p1 + p2 + "</" + element + ">";
         }
         return match;
@@ -169,7 +169,7 @@ Headers:
     # (H1) to ###### (H6)
         Becames: <h1></h1>, <h2></h2>, <h3></h3>, <h4></h4>, <h5></h5>, <h6></h6>
 
-Emphasys:
+Emphasis:
     *asterisks*
     _underscores_
         Becames: <em></em>
@@ -233,4 +233,6 @@ References:
         https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
         https://guides.github.com/features/mastering-markdown/
         https://dillinger.io/
+    REGEX -> MARKDOWN:
+        https://gist.github.com/jbroadway/2836900
 */
