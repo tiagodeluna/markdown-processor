@@ -3,14 +3,16 @@ var convertToHtml = (function(text) {
     var REGEX_HEADERS = /^#{1,6}/;
     var REGEX_ORDERED_LIST = null;
     var REGEX_UNORDERED_LIST = null;
-//    var REGEX_ITALIC_1 = /_\B(.+?)\B_/g;
-//    var REGEX_ITALIC_1 = /_(.*?)(?=_)_/g;
-    var REGEX_ITALIC_1 = /_(.+?)_/g;
-    var REGEX_ITALIC_2 = /\*(.+?)\*/g;
-//    var REGEX_BOLD_1 = /__(\S.+?\S)__/g;
-//    var REGEX_BOLD_1 = /__(.*?)(?=__)__/g;
-    var REGEX_BOLD_1 = /__(.+?)__/g;
-    var REGEX_BOLD_2 = /\*\*(.+?)\*\*/g;
+    var REGEX_ITALIC_UNDERLINE = /_(?=\S)(.*?)(\S)_/g;
+    var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
+    var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;
+    var REGEX_BOLD_ASTERISK = /\*\*(?=\S)(.*?)(\S)\*\*/g;
+    var REGEX_NOT_EMPHASYS_MARKS = /[^ _\*]/;
+// Alternatives:
+//    /__\B(.+?)\B__/g;
+//    /__(.*?)(?=__)__/g;
+//    /__(\S.+?\S)__/g;
+//    /__(.+?)__/g;
     var REGEX_STRIKE = null;
 
     var LineType = {
@@ -82,38 +84,39 @@ var convertToHtml = (function(text) {
 
         applyEmphasys: function(text) {
 
-            function boldReplacer(match, p1, offset, text) {
-                return ["<strong>", p1, "</strong>"].join("");
-            }
-
-            function italicReplacer(match, p1, offset, text) {
-                return ["<em>", p1, "</em>"].join("");
-            }
-
             if (text != null && text.length > 0) {
                 /* REPLACE BOLD AND ITALIC OCCURRENCES */
-                return text.replace(REGEX_BOLD_1, boldReplacer)
-                        .replace(REGEX_BOLD_2, boldReplacer)
-                        .replace(REGEX_ITALIC_1, italicReplacer)
-                        .replace(REGEX_ITALIC_2, italicReplacer);
-                /*
-                if (b_occur != null && b_occur.length > 0) {
-                    //Instantiate a new "BOLD" element
-                    var element = Object.create(MarkdownElement);
-                    element.type = LineType.BOLD;
-                    element.content = b_occur[1];
-                    //Get the text before and after the emphasys content
-                    var before = text.substr(0,b_occur.index);
-                    var after = text.substr(b_occur.index+b_occur[0].length);
-
-                    return before + element + this.applyEmphasys(after);
-                }
-                */
+                return text.replace(REGEX_BOLD_UNDERLINE, boldReplacer)
+                        .replace(REGEX_BOLD_ASTERISK, boldReplacer)
+                        .replace(REGEX_ITALIC_UNDERLINE, italicReplacer)
+                        .replace(REGEX_ITALIC_ASTERISK, italicReplacer);
             }
 
             return text;
         }
     };
+
+    /* The auxiliary replacer functions receive the following REGEX attributes:
+        - match: The full matched string
+        - p1: The first parenthesized substring match
+        - p2: The second parenthesized substring match
+        - offset: The 0-based index of the match in the string (Omitted. Not necessary here)
+        - text: The original string (Omitted. Not necessary here)
+    */
+    function boldReplacer(match, p1, p2) {
+        return emphasysReplacer(match, p1, p2, "strong");
+    }
+
+    function italicReplacer(match, p1, p2) {
+        return emphasysReplacer(match, p1, p2, "em");
+    }
+
+    function emphasysReplacer(match, p1, p2, element) {
+        if (REGEX_NOT_EMPHASYS_MARKS.test(p1) || REGEX_NOT_EMPHASYS_MARKS.test(p2)) {
+            return "<" + element + ">" + p1 + p2 + "</" + element + ">";
+        }
+        return match;
+    }
 
     return function (text) {
         var lines = text == null ? [] : text.split("\n");
@@ -137,7 +140,7 @@ var convertToHtml = (function(text) {
 
                 /* FIND HEADERS */
                 var occur = REGEX_HEADERS.exec(lines[i]);
-                if (occur != null && occur.length > 0) {
+                if (occur != null) {
                     line.type = LineType.HEADER;
                     line.level = occur[0].length;
                     line.content = lines[i].substr(line.level).trim();
@@ -178,6 +181,19 @@ Emphasys:
         Becames:
             in CSS: .strike {text-decoration: line-through;}
             in HTML: <span class="strike"></span>
+
+------------------------------------------------------------
+
+TEST CASE:
+Eu __sou__ muito __esperto, hahahah__ Teste**!
+Eu quero **marcar** e *italicar*, **marcar *e italicar***
+Eu quero **marcar** e __*italicar*, **marcar *e italicar***__
+__
+________________
+***********************
+
+------------------------------------------------------------
+
 
 Lists:
     * Item
