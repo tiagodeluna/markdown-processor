@@ -7,7 +7,7 @@
         	$scope.markdown = {input: '', output: ''};
         	
         	$scope.update = function() {
-        		$scope.markdown.output = convertToHtml($scope.markdown.input);
+        		$scope.markdown.output = window.MarkdownConverter.convert($scope.markdown.input);
         	};
         	
         	$scope.save = function() {
