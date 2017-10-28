@@ -14,6 +14,11 @@
     var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
     var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;
     var REGEX_BOLD_ASTERISK = /\*\*(?=\S)(.*?)(\S)\*\*/g;
+// Alternatives:
+//    /__\B(.+?)\B__/g;
+//    /__(.*?)(?=__)__/g;
+//    /__(\S.+?\S)__/g;
+//    /__(.+?)__/g;
     var REGEX_NOT_EMPHASIS_MARKS = /[^ _\*]/;
     var REGEX_STRIKE = null;
 

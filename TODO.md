@@ -2,14 +2,15 @@
 
 ## General
 
-* Turn markdownConverter into a library
+* **(done)** Turn markdownConverter into a library
+* Solve failed emphasis test cases
 * Implement test cases for all elements
 * Implement the conversion of the rest of the elements below
 
 ## Markdown Elements to Parse
 
 * **(done)** Headers: `#` ... `######` to `<h1></h1>` ... `<h6></h6>`
-* **(done)** Emphasis: `*asterisks*` to `<em></em>`
+* **(done)** Italic: `*asterisks*` to `<em></em>`
 * **(done)** Strong: `**asterisks**` to `<strong></strong>`
 * Scratch: `~~Scratch this.~~` to:
     - in CSS: `.strike {text-decoration: line-through;}`
