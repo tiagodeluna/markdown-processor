@@ -1,22 +1,22 @@
 
-describe('Markdown to HTML Converter library', function () {
+describe("Markdown to HTML Converter library", function () {
     var instance = window.MarkdownConverter;
 
-    it('is correctly defined', function () {
+    it("should be correctly defined", function () {
         expect(instance).toBeDefined();
         expect(instance.convert).toBeDefined();
     });
 
-    it('converts a single line unmarked text into a paragraph', function () {
+    it("should convert a single line unmarked text into a paragraph", function () {
         expect(instance.convert("Test")).toEqual("<p>Test</p>");
     });
 
-    it('converts multiple line unmarked text into two paragraphs', function () {
+    it("should convert multiple line unmarked text into two paragraphs", function () {
         expect(instance.convert("Line 1\nLine 2")).toEqual("<p>Line 1</p><p>Line 2</p>");
     });
 
-    describe('converts Headers', function () {
-        it('of levels 1 to 6', function () {
+    describe("when text is marked as a header", function () {
+        it('should convert it into an HTML header of level 1 to 6', function () {
             expect(instance.convert("# Test")).toEqual("<h1>Test</h1>");
             expect(instance.convert("## Test")).toEqual("<h2>Test</h2>");
             expect(instance.convert("### Test")).toEqual("<h3>Test</h3>");
@@ -26,14 +26,14 @@ describe('Markdown to HTML Converter library', function () {
         });
 
 
-        it('only up to 6th level', function () {
+        it("should convert it into an HTML header only up to 6th level", function () {
             expect(instance.convert("######## Test")).toEqual("<h6>## Test</h6>");
         });
 
     });
 
-    describe('converts emphases', function () {
-        it('of the italic type', function () {
+    describe('when text contains emphases marks', function () {
+        it('should convert italic emphasis', function () {
             //In a paragraph
             expect(instance.convert("*Test*")).toEqual("<p><em>Test</em></p>");
             expect(instance.convert("_Test_")).toEqual("<p><em>Test</em></p>");
@@ -44,7 +44,7 @@ describe('Markdown to HTML Converter library', function () {
                 .toEqual("<p>It's a <em>clever</em> test, <em>very, very</em> clever!</p>");
         });
 
-        it('of the bold type', function () {
+        it('should convert bold emphasis', function () {
             //In a paragraph
             expect(instance.convert("Unit **test**")).toEqual("<p>Unit <strong>test</strong></p>");
             //In a header
@@ -54,7 +54,7 @@ describe('Markdown to HTML Converter library', function () {
                 .toEqual("<p>It's a <strong>clever</strong> test, <strong>very, very</strong> clever**!</p>");
         });
 
-        it('of mixed types', function () {
+        it('should convert mixed type emphases', function () {
             //Case 1
             expect(instance.convert("I want to **mark** the *following* text with **bold *and italic***"))
                 .toEqual("<p>I want to <strong>mark</strong> the <em>following</em> text with <strong>bold <em>and italic</em></strong></p>");
@@ -63,7 +63,7 @@ describe('Markdown to HTML Converter library', function () {
                 .toEqual("<p>I want to mark with <strong>bold</strong> and <strong><em>italic</em>, <strong>bold <em>and italic</em></strong></strong></p>");
         });
 
-        it('but ignores sequences of the same markdown empasis char', function () {
+        it('ignores sequences of the same markdown empasis char', function () {
             //Case 1
             expect(instance.convert("________________")).toEqual("<p>________________</p>");
             //Case 2
