@@ -8,8 +8,8 @@
     // AUXILIARY CLASSES
     //The regular expressions for markdown elements
     var REGEX_HEADERS = /^#{1,6}/;
-    var REGEX_ORDERED_LIST = null;
-    var REGEX_UNORDERED_LIST = null;
+    var REGEX_ORDERED_LIST = /x/;
+    var REGEX_UNORDERED_LIST = /y/;
     var REGEX_ITALIC_UNDERLINE = /_(?=\S)(.*?)(\S)_/g;
     var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
     var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;
@@ -128,42 +128,56 @@
     //Creates an instance of the library
     function define_converter() {
         var Converter = {};
+        var emptyLnCounter = 0;
+
+        function createLine(text) {
+            //Create a new line and identify its type using Regex
+            var line = Object.create(MarkdownElement);
+
+            /* JUMP LINE */
+            if (text.trim().length == 0) {
+                line.type = LineType.EMPTY;
+                return line;
+            }
+
+            /* FIND HEADERS */
+            var occur = REGEX_HEADERS.exec(text);
+            if (occur != null) {
+                line.type = LineType.HEADER;
+                line.level = occur[0].length;
+                line.content = text.substr(line.level).trim();
+                return line;
+            } 
+
+            /* FIND ORDERED LIST */
+            occur = REGEX_ORDERED_LIST.exec(text);
+            if (occur != null) {
+                line.type = LineType.ORDERED_LIST;
+                //TODO...
+                return line;
+            } 
+
+            /* FIND UNORDERED LIST */
+            occur = REGEX_UNORDERED_LIST.exec(text);
+            if (occur != null) {
+                line.type = LineType.UNORDERED_LIST;
+                //TODO...
+                return line;
+            } 
+
+            // If the line does not belong to any specific type, it is returned as a new paragraph
+            line.type = LineType.PARAGRAPH;
+            line.content = text;
+            return line;
+        }
 
         Converter.convert = function(text) {
             var lines = text == null ? [] : text.split("\n");
             var output = [];
-            var emptyLnCounter = 0;
             
             var len = lines.length;
             for (var i = 0; i < len; i += 1) {
-                //Create a new line and identify its type using Regex
-                var line = Object.create(MarkdownElement);
-
-                if (lines[i].trim().length == 0) {
-                    /* JUMP LINE */
-                    emptyLnCounter += 1;
-                    if (emptyLnCounter > 1) {
-                        line.type = LineType.EMPTY;
-                        output.push(line);
-                    }
-                } else {
-                    emptyLnCounter = 0;
-
-                    /* FIND HEADERS */
-                    var occur = REGEX_HEADERS.exec(lines[i]);
-                    if (occur != null) {
-                        line.type = LineType.HEADER;
-                        line.level = occur[0].length;
-                        line.content = lines[i].substr(line.level).trim();
-                        output.push(line);
-                    } else {
-                        // TODO: Other rules!
-                        line.type = LineType.PARAGRAPH;
-                        line.content = lines[i];
-                        output.push(line);
-                    }
-
-                }
+                output.push( createLine(lines[i]) );
             }
 
             //Join the output array into a single string, implicitly
