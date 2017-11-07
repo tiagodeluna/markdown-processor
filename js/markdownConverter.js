@@ -8,8 +8,8 @@
     // AUXILIARY CLASSES
     //The regular expressions for markdown elements
     var REGEX_HEADERS = /^#{1,6}/;
-    var REGEX_ORDERED_LIST = /x/;
-    var REGEX_UNORDERED_LIST = /y/;
+    var REGEX_ORDERED_LIST = /^(\s*)\d+\.\s+(.+?)/;
+    var REGEX_UNORDERED_LIST = /^(\s*aosijdoas)/;
     var REGEX_ITALIC_UNDERLINE = /_(?=\S)(.*?)(\S)_/g;
     var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
     var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;
@@ -34,7 +34,8 @@
     var ListPosition = {
         FIRST: 1,
         MIDDLE: 2,
-        LAST: 3
+        LAST: 3,
+        FIRST_AND_LAST: 4
     };
 
     var MarkdownElement = {
@@ -60,22 +61,22 @@
                     closing = "</p>";
                     break;
                 case LineType.UNORDERED_LIST:
-                    if (this.position === ListPosition.FIRST) {
+                    if (this.position === ListPosition.FIRST || this.position === ListPosition.FIRST_AND_LAST) {
                         opening = "<ul>";
                     }
                     opening += "<li>";
                     closing = "</li>";
-                    if (this.position === ListPosition.LAST) {
+                    if (this.position === ListPosition.LAST || this.position === ListPosition.FIRST_AND_LAST) {
                         closing += "</ul>";
                     }
                     break;
                 case LineType.ORDERED_LIST:
-                    if (this.position === ListPosition.FIRST) {
+                    if (this.position === ListPosition.FIRST || this.position === ListPosition.FIRST_AND_LAST) {
                         opening = "<ol>";
                     }
                     opening += "<li>";
                     closing = "</li>";
-                    if (this.position === ListPosition.LAST) {
+                    if (this.position === ListPosition.LAST || this.position === ListPosition.FIRST_AND_LAST) {
                         closing += "</ol>";
                     }
                     break;
@@ -125,12 +126,16 @@
         return match;
     }
 
+    function calculateLevel(spaces) {
+        return Math.trunc(spaces / 3) + 1;
+    }
+
     //Creates an instance of the library
     function define_converter() {
         var Converter = {};
         var emptyLnCounter = 0;
 
-        function createLine(text) {
+        function createLine(text, prev) {
             //Create a new line and identify its type using Regex
             var line = Object.create(MarkdownElement);
 
@@ -153,7 +158,33 @@
             occur = REGEX_ORDERED_LIST.exec(text);
             if (occur != null) {
                 line.type = LineType.ORDERED_LIST;
-                //TODO...
+                //Get list level based on the number of white spaces
+                line.level = calculateLevel(occur[1].length);
+                line.content = occur[2];
+                //TODO: Check if its first
+                //IF previous element doesn't exist
+                    //OR previous element is from a different type
+                    //OR previous element is from a lower level
+                if (prev == null || prev.type !== line.type
+                    || prev.level < line.level) {
+                    line.position = ListPosition.FIRST_AND_LAST;
+                } else {
+                    line.position = ListPosition.LAST;
+                }
+
+                //IF previous element exist
+                    //AND Its type is a list
+                        //SO...
+                        //IF previous element is LAST
+                            //SO previous is now MIDDLE
+                if (prev != null && (prev.type === LineType.ORDERED_LIST || prev.type === LineType.UNORDERED_LIST)) {
+                    if (prev.position === ListPosition.FIRST_AND_LAST) {
+                        prev.position = ListPosition.FIRST;
+                    } else {
+                        prev.position = ListPosition.MIDDLE;
+                    }
+                }
+
                 return line;
             } 
 
@@ -163,7 +194,15 @@
                 line.type = LineType.UNORDERED_LIST;
                 //TODO...
                 return line;
-            } 
+            }
+
+            // TODO: Handle when a list ends
+            /*
+            if (line.type != LineType.ORDERED_LIST && line.type != LineType.UNORDERED_LIST) {
+                if (prev != null && (prev.type == LineType.ORDERED_LIST || prev.type == LineType.UNORDERED_LIST)) {
+                    prev.position = ListPosition.LAST;
+                }
+            }*/
 
             // If the line does not belong to any specific type, it is returned as a new paragraph
             line.type = LineType.PARAGRAPH;
@@ -174,12 +213,16 @@
         Converter.convert = function(text) {
             var lines = text == null ? [] : text.split("\n");
             var output = [];
+            var current, previous;
             
             var len = lines.length;
             for (var i = 0; i < len; i += 1) {
-                output.push( createLine(lines[i]) );
+                current = createLine(lines[i], previous);
+                previous = current;
+                output.push(current);
             }
 
+            console.log(output.join(""));
             //Join the output array into a single string, implicitly
             // calling the toString() method of each line
             return output.join("");
