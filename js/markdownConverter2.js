@@ -8,6 +8,7 @@
     // AUXILIARY CLASSES
     //The regular expressions for markdown elements
     var REGEX_HEADERS = /^#{1,6}/;
+    var REGEX_LIST_TEST = /^\s*(?:\d+\.|\*)\s+.+?/;
     var REGEX_ORDERED_LIST = /^(\s*)\d+\.\s+(.+?)/;
     var REGEX_UNORDERED_LIST = /^(\s*aosijdoas)/;
     var REGEX_ITALIC_UNDERLINE = /_(?=\S)(.*?)(\S)_/g;
@@ -31,8 +32,7 @@
         PARAGRAPH: 3,
         UNORDERED_LIST: 4,
         ORDERED_LIST: 5,
-        QUOTE: 6,
-        LIST_ITEM: 7
+        QUOTE: 6
     };
 
     //------------------------------------------------------------
@@ -61,7 +61,8 @@
                 opening = "<p>";
                 closing = "</p>";
                 break;
-            case LineType.LIST_ITEM:
+            case LineType.ORDERED_LIST:
+            case LineType.UNORDERED_LIST:
                 opening = "<li>";
                 closing = "</li>";
                 break;
@@ -87,11 +88,15 @@
         return text;
     };
 
+    MarkdownElement.prototype.isSibling = function(element) {
+        return this.type === element.type && this.level === element.level;
+    };
+
     //------------------------------------------------------------
     // MarkdownList - Class that represents a list of elements
     //------------------------------------------------------------
-    function MarkdownList(type, level, content) {
-        MarkdownElement.call(this, type, level, content);
+    function MarkdownList(type, level) {
+        MarkdownElement.call(this, type, level, []);
     };
 
     MarkdownList.prototype = Object.create(MarkdownElement.prototype);
@@ -121,6 +126,21 @@
         }
         return opening + elements + closing;
     }
+
+    MarkdownElement.prototype.findCommonAncestor = function(lvl) {
+        if (this.parent != null) {
+            if (this.parent.Level > lvl) {
+                return this.parent.findCommonAncestor(lvl);
+            }
+
+            if (this.parent.level == lvl) {
+                return this.parent;
+            }
+        }
+
+        return null;
+    };
+
 
     //------------------------------------------------------------
     // Auxiliary functions
@@ -156,117 +176,125 @@
     function define_converter() {
         var Converter = {};
         var emptyLnCounter = 0;
+        var index;
 
-        function createLine(text, parent) {
+        //----------------------------------
+
+        function convertList(lines, previous) {
+            //Check if next line is still a list element
+            if (index >= lines.length || !REGEX_LIST_TEST.test(lines[index])) {
+                return previous;
+            }
+
+            var current = null;
+            var text = lines[index];
+
+            function createElement(regex, type, text) {
+                var occur = regex.exec(text);
+                if (occur != null) {
+                    return new MarkdownElement(
+                        type,
+                        calculateLevel(occur[1].length),
+                        occur[2]);
+                }
+            }
+
+            //Create new element
+            var elem = createElement(REGEX_ORDERED_LIST, LineType.ORDERED_LIST, text);
+            if (elem == null) {
+                elem = createElement(REGEX_UNORDERED_LIST, LineType.UNORDERED_LIST, text);
+            }
+
+            //A new list is starting
+            if (previous === null) {
+                current = new MarkdownList(elem.type, elem.level);
+                current.parent = null;
+                elem.parent = current;
+                current.content.push(elem);
+            }
+            //The elements are siblings
+            else if (previous.level == elem.level) {
+                current = previous;
+                elem.parent = current;
+                current.content.push(elem);
+            }
+            //There is a new level on the list
+            else if (previous.level < elem.level) {
+                current = new MarkdownList(elem.type, elem.level);
+                elem.parent = current;
+                current.content.push(elem);
+                
+                previous.content.push(current);
+                current.parent = previous;
+            }
+            //The element is from a lower level
+            else if (previous.level > elem.level) {
+                current = previous.findCommonAncestor(elem.level);
+                
+                // There is no sibling for this element. This is another list.
+                if (current == null) {
+                    index -= 1;
+                    return previous;
+                }
+                //The sibling isn't from the same type. So, this is another list. 
+                if (!elem.type.equals(current.type)) {
+                    index -= 1;
+                    return current;
+                }
+                elem.parent = current;
+                current.content.push(elem);
+            }
+
+            index += 1;
+            return convertList(lines, current);
+        }
+
+        function convertElement(text) {
             //Create a new line and identify its type using Regex
-            //var line = Object.create(MarkdownElement);
-            var line;
+            var line = Object.create(MarkdownElement);
 
             /* JUMP LINE */
             if (text.trim().length == 0) {
-                //line.type = LineType.EMPTY;
-                line = new MarkdownElement(LineType.EMPTY);
+                line.type = LineType.EMPTY;
                 return line;
             }
 
             /* FIND HEADERS */
             var occur = REGEX_HEADERS.exec(text);
             if (occur != null) {
-                var level = occur[0].length;
-                line = new MarkdownElement(LineType.HEADER,
-                    level,
-                    text.substr(level).trim()
-                );
+                line.type = LineType.HEADER;
+                line.level = occur[0].length;
+                line.content = text.substr(line.level).trim();
                 return line;
             } 
 
-            /* FIND ORDERED LIST */
-            occur = REGEX_ORDERED_LIST.exec(text);
-            if (occur != null) {
-                //Get item level based on the number of white spaces before
-                var level = calculateLevel(occur[1].length);
-
-                if (parent == null) {
-                    parent = new MarkdownList(line.type, level, []);
-                } 
-
-                if (parent.level === level) {
-                    line = new MarkdownElement(LineType.ORDERED_LIST, level, occur[2], parent);
-                    parent.content.push(line);
-                } else if (parent.level < level) {
-                    var newParent = new MarkdownList(LineType.ORDERED_LIST, level, [], parent);
-                    line = new MarkdownElement(LineType.ORDERED_LIST, level, occur[2], newParent);
-                    newParent.content.push(line);
-                    parent.content.push(newParent);
-                } else if (parent.level > level) {
-                    //Get parent's parent
-                    var grandParent = parent.parent;
-                    line = new MarkdownElement(LineType.ORDERED_LIST, level, occur[2], grandParent);
-                    //Add line to it
-                    grandParent.content.push(line);
-                    return grandParent;
-                }
-
-                /*
-                if (parent.type != line.type) {
-
-                }
-                parent.content.push(line);
-                */
-                return parent;
-            }
-
-/*
-1. Teste 1
-2. ...
-
-1. Teste 2
-   1. ...
-2. ...
-
-* Teste 3
-   1. ...
-*/
-
-            /* FIND UNORDERED LIST */
-            occur = REGEX_UNORDERED_LIST.exec(text);
-            if (occur != null) {
-                line = new MarkdownElement(LineType.UNORDERED_LIST);
-                //TODO...
-                return line;
-            }
-
             // If the line does not belong to any specific type, it is returned as a new paragraph
-            line = new MarkdownElement(LineType.PARAGRAPH, null, text);
+            line.type = LineType.PARAGRAPH;
+            line.content = text;
             return line;
         }
 
+        //----------------------------------
+
         Converter.convert = function(text) {
             var lines = text == null ? [] : text.split("\n");
+            var length = lines.length;
             var output = [];
-            var current, list;
+            index = 0;
             
-            var len = lines.length;
-            for (var i = 0; i < len; i += 1) {
-                current = createLine(lines[i], list);
-
-                //Tá um lixo... muita complexidade sob responsabilidade do método externo
-                if (current.type === LineType.ORDERED_LIST || current.type === LineType.UNORDERED_LIST) {
-                    //if (current.)
-                    list = current;
-                } else {
-                    output.push(current);
+            while(index < length) {
+                if (REGEX_LIST_TEST.test(lines[index])) {
+                    output.push(convertList(lines, null));
                 }
-
-                if (current.type != LineType.ORDERED_LIST && current.type != LineType.UNORDERED_LIST) {
-                    if (list != null) {
-                        output.
-                    }
-                    output.push(current);
+                
+                //console.log("lines["+index+"]="+lines[index]);
+                if(!REGEX_LIST_TEST.test(lines[index])) {
+                    output.push(convertElement(lines[index]));
                 }
-                //output.push(current);
+                index += 1;
             }
 
+            //TEMP
             console.log(output.join(""));
 
             //Join the output array into a single string, implicitly

@@ -49,3 +49,7 @@ ________________
     - https://dillinger.io/
 * REGEX -> MARKDOWN:
     - https://gist.github.com/jbroadway/2836900
+* Javascript Library:
+    - https://code.tutsplus.com/tutorials/build-your-first-javascript-library--net-26796
+* Unit testing Javascript:
+    - https://code.tutsplus.com/tutorials/testing-your-javascript-with-jasmine--net-21229
