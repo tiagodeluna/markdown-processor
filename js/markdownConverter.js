@@ -9,9 +9,9 @@
     //The regular expressions for markdown elements
     var REGEX_HEADERS = /^#{1,6}/;
     //TODO Consider '*', '-', '+' as list markers
-    var REGEX_LIST_TEST = /^\s*(?:(\d+\.)|(\*))\s+.+/;
+    var REGEX_LIST_TEST = /^\s*(?:(\d+\.)|\*|\+|\-)\s+.+/;
     var REGEX_ORDERED_LIST = /^(\s*)\d+\.\s+(.+)/;
-    var REGEX_UNORDERED_LIST = /^(\s*)\*\s+(.+)/;
+    var REGEX_UNORDERED_LIST = /^(\s*)(?:\*|\+|\-)\s+(.+)/;
     var REGEX_ITALIC_UNDERLINE = /_(?=\S)(.*?)(\S)_/g;
     var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
     var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;

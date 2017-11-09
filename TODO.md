@@ -15,9 +15,9 @@
 * Scratch: `~~Scratch this.~~` to:
     - in CSS: `.strike {text-decoration: line-through;}`
     - in HTML: `<span class="strike"></span>`
-* Unordered list: `* Item`, `- Item` or `+ Item` to `<ul><li></li></ul>`
+* **(done)** Unordered list: `* Item`, `- Item` or `+ Item` to `<ul><li></li></ul>`
     - *Obs: To create a sublist, the "child" element must have 3 more spaces than its parent*
-* Ordered list: `1. Item` to `<ol><li></li></ol>`
+* **(done)** Ordered list: `1. Item` to `<ol><li></li></ol>`
     - *Obs: The number sequence doesn't matter, but the first element defines the starting number*
 * Links: `[link](https:...)` or `[link]<https:...>` to `<a href="http://...">link</a>`
 * Links with reference: `[link]` **and** `[link]: (https:...)` **or** `[link]: <https:...>` to `<a href="http://...">link</a>`
