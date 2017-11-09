@@ -16,7 +16,7 @@ describe("Markdown to HTML Converter library", function () {
     });
 
     describe("when text is marked as a header", function () {
-        it('should convert it into an HTML header of level 1 to 6', function () {
+        it("should convert it into an HTML header of level 1 to 6", function () {
             expect(instance.convert("# Test")).toEqual("<h1>Test</h1>");
             expect(instance.convert("## Test")).toEqual("<h2>Test</h2>");
             expect(instance.convert("### Test")).toEqual("<h3>Test</h3>");
@@ -32,8 +32,8 @@ describe("Markdown to HTML Converter library", function () {
 
     });
 
-    describe('when text contains emphases marks', function () {
-        it('should convert italic emphasis', function () {
+    describe("when text contains emphases marks", function () {
+        it("should convert italic emphasis", function () {
             //In a paragraph
             expect(instance.convert("*Test*")).toEqual("<p><em>Test</em></p>");
             expect(instance.convert("_Test_")).toEqual("<p><em>Test</em></p>");
@@ -44,7 +44,7 @@ describe("Markdown to HTML Converter library", function () {
                 .toEqual("<p>It's a <em>clever</em> test, <em>very, very</em> clever!</p>");
         });
 
-        it('should convert bold emphasis', function () {
+        it("should convert bold emphasis", function () {
             //In a paragraph
             expect(instance.convert("Unit **test**")).toEqual("<p>Unit <strong>test</strong></p>");
             //In a header
@@ -54,7 +54,7 @@ describe("Markdown to HTML Converter library", function () {
                 .toEqual("<p>It's a <strong>clever</strong> test, <strong>very, very</strong> clever**!</p>");
         });
 
-        it('should convert mixed type emphases', function () {
+        it("should convert mixed type emphases", function () {
             //Case 1
             expect(instance.convert("I want to **mark** the *following* text with **bold *and italic***"))
                 .toEqual("<p>I want to <strong>mark</strong> the <em>following</em> text with <strong>bold <em>and italic</em></strong></p>");
@@ -63,15 +63,54 @@ describe("Markdown to HTML Converter library", function () {
                 .toEqual("<p>I want to mark with <strong>bold</strong> and <strong><em>italic</em>, <strong>bold <em>and italic</em></strong></strong></p>");
         });
 
-        it('ignores sequences of the same markdown empasis char', function () {
-            //Case 1
+        it("ignores sequences of the same markdown empasis char", function () {
+            //Case 1 - Using '_' marker
             expect(instance.convert("________________")).toEqual("<p>________________</p>");
-            //Case 2
+            //Case 2 - Using '*' marker
             expect(instance.convert("***********************")).toEqual("<p>***********************</p>");
         });
 
     });
 
+    describe("when text contains elements with list marks", function () {
+        it("should convert elements marked as ordered list (i.e. '1. Foo') appropriately", function () {
+            //Case 1 - Single level list
+            expect(instance.convert("1. test 1\n2. test 2")).toEqual("<ol><li>test 1</li><li>test 2</li></ol>");
+            //Case 2 - Multilevel level list
+            expect(instance.convert("1. test 1\n   1. test 1.1\n   1. test 1.2")).toEqual("<ol><li>test 1</li><ol><li>test 1.1</li><li>test 1.2</li></ol></ol>");
+            expect(instance.convert("1. test 1\n    1. test 1.1\n      1. test 1.1.1")).toEqual("<ol><li>test 1</li><ol><li>test 1.1</li><ol><li>test 1.1.1</li></ol></ol></ol>");
+            //Case 3 - With random numeric markers
+            expect(instance.convert("99. test 1\n1000. test 2")).toEqual("<ol><li>test 1</li><li>test 2</li></ol>");
+            //Case 4 - Multilevel level list w/ last element on first level
+            expect(instance.convert("1. test 1\n   1. test 1.1\n1. test 2")).toEqual("<ol><li>test 1</li><ol><li>test 1.1</li></ol><li>test 2</li></ol>");
+        });
+
+
+        it("should convert elements marked as unordered list (i.e. '* Foo') appropriately", function () {
+            //Case 1 - Single level list with same marker ('*')
+            expect(instance.convert("* test 1\n* test 2")).toEqual("<ul><li>test 1</li><li>test 2</li></ul>");
+            //Case 2 - List with mixed markers ('*', '-', '+')
+            expect(instance.convert("* test 1\n- test 2\n+ test 3")).toEqual("<ul><li>test 1</li><li>test 2</li><li>test 3</li></ul>");
+            //Case 3 - Multilevel level list w/ 2 levels
+            expect(instance.convert("- test 1\n   - test 1.1\n   - test 1.2")).toEqual("<ul><li>test 1</li><ul><li>test 1.1</li><li>test 1.2</li></ul></ul>");
+            //Case 4 - Multilevel level list w/ 3 levels
+            expect(instance.convert("* test 1\n    - test 1.1\n      + test 1.1.1")).toEqual("<ul><li>test 1</li><ul><li>test 1.1</li><ul><li>test 1.1.1</li></ul></ul></ul>");
+            //Case 5 - Multilevel level list w/ last element on first level
+            expect(instance.convert("* test 1\n   - test 1.1\n* test 2")).toEqual("<ul><li>test 1</li><ul><li>test 1.1</li></ul><li>test 2</li></ul>");
+        });
+
+        it("should convert elements marked with both list type marks appropriately", function () {
+            //Case 1 - Ordered list with unordered subitems
+            expect(instance.convert("1. test 1\n   - test 1.1\n    - test 1.2")).toEqual("<ol><li>test 1</li><ul><li>test 1.1</li><li>test 1.2</li></ul></ol>");
+            //Case 2 - Unordered list with ordered subitems
+            expect(instance.convert(" * test 1\n   1. test 1.1\n   1. test 1.2")).toEqual("<ul><li>test 1</li><ol><li>test 1.1</li><li>test 1.2</li></ol></ul>");
+            //Case 3 - List of mixed types w/ last element on first level
+            expect(instance.convert("* test 1\n   9. test 1.1\n* test 2")).toEqual("<ul><li>test 1</li><ol><li>test 1.1</li></ol><li>test 2</li></ul>");
+            //Case 4 - Elements in the same level but from different types
+            expect(instance.convert("* test 1\n    - test 1.1\n1. test 1")).toEqual("<ul><li>test 1</li><ul><li>test 1.1</li></ul></ul><ol><li>test 1</li></ol>");
+        });
+
+    });
 
 /*
     it("throws an error when passed a null text", function () {
