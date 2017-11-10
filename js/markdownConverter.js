@@ -8,7 +8,6 @@
     // AUXILIARY CLASSES
     //The regular expressions for markdown elements
     var REGEX_HEADERS = /^#{1,6}/;
-    //TODO Consider '*', '-', '+' as list markers
     var REGEX_LIST_TEST = /^\s*(?:(\d+\.)|\*|\+|\-)\s+.+/;
     var REGEX_ORDERED_LIST = /^(\s*)\d+\.\s+(.+)/;
     var REGEX_UNORDERED_LIST = /^(\s*)(?:\*|\+|\-)\s+(.+)/;
@@ -22,6 +21,7 @@
 //    /__(\S.+?\S)__/g;
 //    /__(.+?)__/g;
     var REGEX_NOT_EMPHASIS_MARKS = /[^ _\*]/;
+    var REGEX_LINK = /\[(.+)\](?:\(|\<)(.+)(?:\)|\>)/;
     var REGEX_STRIKE = null;
 
     //------------------------------------------------------------
@@ -89,10 +89,6 @@
         return text;
     };
 
-    MarkdownElement.prototype.isSibling = function(element) {
-        return this.type === element.type && this.level === element.level;
-    };
-
     //------------------------------------------------------------
     // MarkdownList - Class that represents a list of elements
     //------------------------------------------------------------
@@ -128,7 +124,7 @@
         return opening + elements + closing;
     };
 
-    MarkdownElement.prototype.findCommonAncestor = function(lvl) {
+    MarkdownList.prototype.findCommonAncestor = function(lvl) {
         if (this.parent != null) {
             if (this.parent.level > lvl) {
                 return this.parent.findCommonAncestor(lvl);
@@ -142,6 +138,9 @@
         return null;
     };
 
+    MarkdownList.prototype.calculateLevel = function(spaces) {
+        return Math.trunc(spaces / 3) + 1;
+    };
 
     //------------------------------------------------------------
     // Auxiliary functions
@@ -169,17 +168,11 @@
         return match;
     }
 
-    function calculateLevel(spaces) {
-        return Math.trunc(spaces / 3) + 1;
-    }
-
     //Creates an instance of the library
     function define_converter() {
+        //The Converter object
         var Converter = {};
-        var emptyLnCounter = 0;
         var index;
-
-        //----------------------------------
 
         function convertList(lines, previous) {
             //Check if next line is still a list element
@@ -187,32 +180,33 @@
                 return previous;
             }
 
-            var current = null;
-
-            function createElement(regex, type, text) {
+            //Try to create a list element based on the regex execution results
+            function createElementFromRegex(regex, type, text) {
                 var occur = regex.exec(text);
                 if (occur != null) {
                     return new MarkdownElement(
                         type,
-                        calculateLevel(occur[1].length),
+                        MarkdownList.prototype.calculateLevel(occur[1].length),
                         occur[2]);
                 }
             }
 
+            var currentList;
+
             //Create new element
-            var data = createElement(REGEX_ORDERED_LIST, LineType.ORDERED_LIST, lines[index]);
+            var data = createElementFromRegex(REGEX_ORDERED_LIST, LineType.ORDERED_LIST, lines[index]);
             if (data == null) {
-                data = createElement(REGEX_UNORDERED_LIST, LineType.UNORDERED_LIST, lines[index]);
+                data = createElementFromRegex(REGEX_UNORDERED_LIST, LineType.UNORDERED_LIST, lines[index]);
             }
 
             //A new list is starting
             if (previous === null) {
-                current = new MarkdownList(data.type, data.level);
-                current.parent = null;
-                data.parent = current;
-                current.content.push(data);
+                currentList = new MarkdownList(data.type, data.level);
+                currentList.parent = null;
+                data.parent = currentList;
+                currentList.content.push(data);
             }
-            //The elements are siblings
+            //The new element and the previous are siblings
             else if (previous.level === data.level) {
                 //The sibling isn't from the same type. So we need to get out and start a new list.
                 if (previous.type !== data.type) {
@@ -220,43 +214,43 @@
                     return previous;
                 }
 
-                current = previous;
-                data.parent = current;
-                current.content.push(data);
+                currentList = previous;
+                data.parent = currentList;
+                currentList.content.push(data);
             }
             //There is a new level on the list
             else if (previous.level < data.level) {
-                current = new MarkdownList(data.type, data.level);
-                data.parent = current;
-                current.content.push(data);
+                currentList = new MarkdownList(data.type, data.level);
+                data.parent = currentList;
+                currentList.content.push(data);
                 
-                current.parent = previous;
-                previous.content.push(current);
+                currentList.parent = previous;
+                previous.content.push(currentList);
             }
             //The element is from a lower level
             else if (previous.level > data.level) {
-                current = previous.findCommonAncestor(data.level);
+                currentList = previous.findCommonAncestor(data.level);
                 
                 // There is no sibling for this element. So we need to get out and start a new list.
-                if (current == null) {
+                if (currentList == null) {
                     index -= 1;
                     return previous;
                 }
                 //The ancestor isn't from the same type. So we need to get out and start a new list.
-                if (data.type !== current.type) {
+                if (data.type !== currentList.type) {
                     index -= 1;
-                    return current;
+                    return currentList;
                 }
-                data.parent = current;
-                current.content.push(data);
+                data.parent = currentList;
+                currentList.content.push(data);
             }
 
             //Convert next line passing the current element as a reference
             index += 1;
-            current = convertList(lines, current);
+            currentList = convertList(lines, currentList);
             //Return the list's basis, the element with the lowest level
-            var rootElement = current.findCommonAncestor(1);
-            return rootElement != null ? rootElement : current;
+            var rootElement = currentList.findCommonAncestor(1);
+            return rootElement != null ? rootElement : currentList;
         }
 
         //Create a new line and identify its type using Regex
@@ -281,8 +275,6 @@
             return new MarkdownElement(LineType.PARAGRAPH, 1, text);
         }
 
-        //----------------------------------
-
         Converter.convert = function(text) {
             var lines = text == null ? [] : text.split("\n");
             var length = lines.length;
@@ -301,7 +293,7 @@
             }
 
             //TEMP: Remove it
-            console.log(output.join(""));
+            //console.log(output.join(""));
 
             //Join the output array into a single string, implicitly
             // calling the toString() method of each line
