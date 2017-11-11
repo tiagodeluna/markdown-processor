@@ -21,7 +21,9 @@
 //    /__(\S.+?\S)__/g;
 //    /__(.+?)__/g;
     var REGEX_NOT_EMPHASIS_MARKS = /[^ _\*]/;
-    var REGEX_LINK = /\[(.+)\](?:\(|\<)(.+)(?:\)|\>)/;
+    //var REGEX_LINK = /\[(.+)\](?:\(|\<)(.+)(?:\)|\>)/;
+    var REGEX_LINK = /\[(.+?)(?=\])\](?:\(|\<)(.+?)(?:\)|\>)/;
+    var REGEX_BLOCK = /\[(.+?)(?=\])(.+)/;
     var REGEX_STRIKE = null;
 
     //------------------------------------------------------------
@@ -52,8 +54,7 @@
 
         switch(this.type) {
             case LineType.EMPTY:
-                this.content = "<br />";
-                break;
+                return "<br />";
             case LineType.HEADER:
                 opening = "<h"+this.level+">";
                 closing = "</h"+this.level+">";
@@ -74,7 +75,33 @@
             default:
                 break;
         }
-        return opening + this.applyEmphasis(this.content) + closing;
+
+        return opening + this.inlineConversion(this.content) + closing;
+    };
+
+    MarkdownElement.prototype.inlineConversion = function(content, index = 0) {
+        var text = content.substr(index);
+        var p1 = "",
+            p2,
+            p3 = "";
+
+        /* FIND LINK */
+        var occur = REGEX_LINK.exec(text);
+        if (occur != null) {
+            /* FIND EMPHASIS */
+            p1 = this.applyEmphasis(text.substr(0, occur.index));
+            //Create an HTML link with the URL and Description found
+            p2 = "<a href=\"" + encodeURL(occur[2].trim()) + "\">" + this.applyEmphasis(occur[1]) + "</a>";
+            console.log(p2);
+            //Look for new links in the line
+            p3 = this.inlineConversion(text, occur.index + occur[0].length);
+        }
+        else {
+            p2 = text;
+        }
+
+        /* FIND EMPHASIS */
+        return this.applyEmphasis(p1 + p2 + p3);
     };
 
     MarkdownElement.prototype.applyEmphasis = function(text) {
@@ -166,6 +193,16 @@
             return "<" + element + ">" + p1 + p2 + "</" + element + ">";
         }
         return match;
+    }
+
+    //Encodes URI special characters (except: , / ? : @ & = + $ # _ *)
+    // and characters that can be mistaken for Markdown notation
+    function encodeURL(url) {
+        //URI encoding
+        var newURI = encodeURI(url);
+        //Markdown characters encoding
+        return newURI.replace(/\_/g, "%5F")
+            .replace(/\*/g, "%2A");
     }
 
     //Creates an instance of the library
@@ -282,10 +319,11 @@
             index = 0;
             
             while(index < length) {
+                //Convert list elements
                 if (REGEX_LIST_TEST.test(lines[index])) {
                     output.push(convertList(lines, null));
                 }
-                
+                //Convert all other types of elements
                 if(index < length && !REGEX_LIST_TEST.test(lines[index])) {
                     output.push(convertElement(lines[index]));
                 }

@@ -112,6 +112,23 @@ describe("Markdown to HTML Converter library", function () {
 
     });
 
+    describe("when text contains links to URLs", function () {
+        it("should convert it to HTML links", function () {
+            //Case 1 - Paragraph with a link
+            expect(instance.convert("Please click [here]<http://www.google.com/>"))
+                .toEqual("<p>Please click <a href=\"http://www.google.com/\">here</a></p>");
+            //Case 2 - Paragraph with two links
+            expect(instance.convert("Please click [here]<http://www.google.com/> or [here]<http://www.bing.com/>"))
+                .toEqual("<p>Please click <a href=\"http://www.google.com/\">here</a> or <a href=\"http://www.bing.com/\">here</a></p>");
+            //Case 3 - Text with link and emphasis
+            expect(instance.convert("Please *click [here to go to **Google**]<http://www.google.com/>*"))
+                .toEqual("<p>Please <em>click <a href=\"http://www.google.com/\">here to go to <strong>Google</strong></a></em></p>");
+            //Case 4 - Links in a list
+            expect(instance.convert("* [Google]<http://www.google.com/>\n* The other, [Bing]<http://www.bing.com/>"))
+                .toEqual("<ul><li><a href=\"http://www.google.com/\">Google</a></li><li>The other, <a href=\"http://www.bing.com/\">Bing</a></li></ul>");
+        });
+    });
+
 /*
     it("throws an error when passed a null text", function () {
         var testFn = function () {

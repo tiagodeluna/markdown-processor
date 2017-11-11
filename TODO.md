@@ -19,7 +19,7 @@
     - *Obs: To create a sublist, the "child" element must have 3 more spaces than its parent*
 * **(done)** Ordered list: `1. Item` to `<ol><li></li></ol>`
     - *Obs: The number sequence doesn't matter, but the first element defines the starting number*
-* Links: `[link](https:...)` or `[link]<https:...>` to `<a href="http://...">link</a>`
+* **(done)**Links: `[link](https:...)` or `[link]<https:...>` to `<a href="http://...">link</a>`
 * Links with reference: `[link]` **and** `[link]: (https:...)` **or** `[link]: <https:...>` to `<a href="http://...">link</a>`
 * Handle HTML special characters: `<`, `>`, `/`
 * Handle markdown comments: `[//]: # ()`
