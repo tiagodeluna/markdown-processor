@@ -12,7 +12,7 @@
 * **(done)** Headers: `#` ... `######` to `<h1></h1>` ... `<h6></h6>`
 * **(done)** Italic: `*asterisks*` to `<em></em>`
 * **(done)** Strong: `**asterisks**` to `<strong></strong>`
-* Scratch: `~~Scratch this.~~` to:
+* **(done)** Scratch: `~~Scratch this.~~` to:
     - in CSS: `.strike {text-decoration: line-through;}`
     - in HTML: `<span class="strike"></span>`
 * **(done)** Unordered list: `* Item`, `- Item` or `+ Item` to `<ul><li></li></ul>`

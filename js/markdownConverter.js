@@ -15,6 +15,7 @@
     var REGEX_ITALIC_ASTERISK = /\*(?=\S)(.*?)(\S)\*/g;
     var REGEX_BOLD_UNDERLINE = /__(?=\S)(.*?)(\S)__/g;
     var REGEX_BOLD_ASTERISK = /\*\*(?=\S)(.*?)(\S)\*\*/g;
+    var REGEX_STRIKE = /\~\~(?=\S)(.*?)(\S)\~\~/g;
 // Alternatives:
 //    /__\B(.+?)\B__/g;
 //    /__(.*?)(?=__)__/g;
@@ -22,7 +23,6 @@
 //    /__(.+?)__/g;
     var REGEX_NOT_EMPHASIS_MARKS = /[^ _\*]/;
     var REGEX_LINK = /\[(.+?)\](?:\(|\<)(.+?)(?:\)|\>)/;
-    var REGEX_STRIKE = null;
 
     //------------------------------------------------------------
     // Enum with the different types of elements
@@ -108,7 +108,8 @@
             return text.replace(REGEX_BOLD_UNDERLINE, boldReplacer)
                     .replace(REGEX_BOLD_ASTERISK, boldReplacer)
                     .replace(REGEX_ITALIC_UNDERLINE, italicReplacer)
-                    .replace(REGEX_ITALIC_ASTERISK, italicReplacer);
+                    .replace(REGEX_ITALIC_ASTERISK, italicReplacer)
+                    .replace(REGEX_STRIKE, strikeReplacer);
         }
 
         return text;
@@ -184,6 +185,10 @@
 
     function italicReplacer(match, p1, p2) {
         return emphasisReplacer(match, p1, p2, "em");
+    }
+
+    function strikeReplacer(match, p1, p2) {
+        return emphasisReplacer(match, p1, p2, "del");
     }
 
     function emphasisReplacer(match, p1, p2, element) {

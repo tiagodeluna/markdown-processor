@@ -54,6 +54,13 @@ describe("Markdown to HTML Converter library", function () {
                 .toEqual("<p>It's a <strong>clever</strong> test, <strong>very, very</strong> clever**!</p>");
         });
 
+        it("should convert strike emphasis", function () {
+            //In a paragraph
+            expect(instance.convert("Unit ~~test~~")).toEqual("<p>Unit <del>test</del></p>");
+            //In a header
+            expect(instance.convert("## ~~Test~~")).toEqual("<h2><del>Test</del></h2>");
+        });
+
         it("should convert mixed type emphases", function () {
             //Case 1
             expect(instance.convert("I want to **mark** the *following* text with **bold *and italic***"))
